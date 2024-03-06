@@ -78,35 +78,67 @@ int main(int argc, char **argv) {
         // Send choice to server
         send(clientSocket, &choice, sizeof(choice), 0);
 
-        // Handle different choices
-        switch (choice) {
-            case 1: {
-                // Implement sending ID, Fname, Lname, and score to server
-                break;
-            }
-            case 2: {
-                // Implement sending ID to server and receiving student's information
-                break;
-            }
-            case 3: {
-                // Implement sending score to server and receiving student's information
-                break;
-            }
-            case 4: {
-                // Implement sending request to display all students' information
-                break;
-            }
-            case 5: {
-                // Implement sending ID to server for deletion
-                break;
-            }
-            case 6: {
-                printf("Exiting program...\n");
-                break;
-            }
-            default:
-                printf("Invalid choice. Please try again.\n");
-        }
+// Handle different choices
+switch (choice) {
+    case 1: {
+        // Add student information
+        printf("Enter student ID, First Name, Last Name, and Score: ");
+        int ID, score;
+        char Fname[10], Lname[10];
+        scanf("%d %s %s %d", &ID, Fname, Lname, &score);
+        send(clientSocket, &ID, sizeof(ID), 0);
+        send(clientSocket, Fname, sizeof(Fname), 0);
+        send(clientSocket, Lname, sizeof(Lname), 0);
+        send(clientSocket, &score, sizeof(score), 0);
+        recv(clientSocket, buffer, MAX_BUFFER_SIZE, 0);
+        printf("Server response: %s\n", buffer);
+        break;
+    }
+    case 2: {
+        // Display student information by ID
+        printf("Enter student ID: ");
+        int ID;
+        scanf("%d", &ID);
+        send(clientSocket, &ID, sizeof(ID), 0);
+        recv(clientSocket, buffer, MAX_BUFFER_SIZE, 0);
+        printf("Student information: %s\n", buffer);
+        break;
+    }
+    case 3: {
+        // Display student information by score
+        printf("Enter score: ");
+        int score;
+        scanf("%d", &score);
+        send(clientSocket, &score, sizeof(score), 0);
+        recv(clientSocket, buffer, MAX_BUFFER_SIZE, 0);
+        printf("Students with score above %d: %s\n", score, buffer);
+        break;
+    }
+    case 4: {
+        // Display all student information
+        send(clientSocket, &choice, sizeof(choice), 0);
+        recv(clientSocket, buffer, MAX_BUFFER_SIZE, 0);
+        printf("All student information:\n%s\n", buffer);
+        break;
+    }
+    case 5: {
+        // Delete student information by ID
+        printf("Enter student ID to delete: ");
+        int ID;
+        scanf("%d", &ID);
+        send(clientSocket, &ID, sizeof(ID), 0);
+        recv(clientSocket, buffer, MAX_BUFFER_SIZE, 0);
+        printf("Server response: %s\n", buffer);
+        break;
+    }
+    case 6: {
+        printf("Exiting program...\n");
+        break;
+    }
+    default:
+        printf("Invalid choice. Please try again.\n");
+}
+
     } while (choice != 6);
 
     // Close socket
