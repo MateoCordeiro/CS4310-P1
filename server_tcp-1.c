@@ -15,102 +15,62 @@
 #include <netinet/in.h>
 #include <string.h>
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <unistd.h>
+int main(int argc, char **argv){
+  int welcomeSocket, newSocket;
+  char buffer[1024];
+/* sockaddr_in is an IPv4-specific address structure used for storing internet addresses. */
+  struct sockaddr_in serverAddr;
+/* sockaddr_storage is a generic address structure used for storing addresses of various types, such as IPv4 and IPv6. */
+  struct sockaddr_storage serverStorage;
+  socklen_t addr_size;
+  unsigned short port; /* port server binds to */
 
-#define MAX_BUFFER_SIZE 1024
+  uint32_t num;
+  char msg[30];
 
-int main(int argc, char **argv) {
-    if (argc != 2) {
-        fprintf(stderr, "Usage: %s <port>\n", argv[0]);
-        exit(EXIT_FAILURE);
-    }
+  /*---- Create the socket. The three arguments are: ----*/
+  /* 1) Internet domain 2) Stream socket 3) Default protocol (TCP in this case) */
+  welcomeSocket = socket(PF_INET, SOCK_STREAM, 0);
+  
+  /*---- Configure settings of the server address struct ----*/
+  /* Address family = Internet */
+  serverAddr.sin_family = AF_INET;
 
-    int welcomeSocket, newSocket;
-    struct sockaddr_in serverAddr, clientAddr;
-    socklen_t addr_size;
-    unsigned short port;
-    int choice;
+  /* Set port number, using htons function to use proper byte order */
+  port = (unsigned short) atoi(argv[1]);
+  serverAddr.sin_port = htons(port);
 
-    // Create socket
-    welcomeSocket = socket(PF_INET, SOCK_STREAM, 0);
-    if (welcomeSocket < 0) {
-        perror("Error creating socket");
-        exit(EXIT_FAILURE);
-    }
+  /* Set IP address to localhost */
+  serverAddr.sin_addr.s_addr = INADDR_ANY;
 
-    // Configure server address
-    serverAddr.sin_family = AF_INET;
-    port = (unsigned short)atoi(argv[1]);
-    serverAddr.sin_port = htons(port);
-    serverAddr.sin_addr.s_addr = INADDR_ANY;
-    memset(serverAddr.sin_zero, '\0', sizeof serverAddr.sin_zero);
+  /* Set all bits of the padding field to 0 */
+  memset(serverAddr.sin_zero, '\0', sizeof serverAddr.sin_zero);  
 
-    // Bind socket
-    if (bind(welcomeSocket, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) < 0) {
-        perror("Error binding socket");
-        exit(EXIT_FAILURE);
-    }
+  /*---- Bind the address struct to the socket ----*/
+  bind(welcomeSocket, (struct sockaddr *) &serverAddr, sizeof(serverAddr));
 
-    // Listen for connections
-    if (listen(welcomeSocket, 5) == -1) {
-        perror("Error listening on socket");
-        exit(EXIT_FAILURE);
-    }
+  /*---- Listen on the socket, with 5 max connection requests queued ----*/
+  if(listen(welcomeSocket,5)==0)
+    printf("Listening\n");
+  else
+    printf("Error\n");
 
-    printf("Server listening on port %d...\n", port);
+  /*---- Accept call creates a new socket for the incoming connection ----*/
+  addr_size = sizeof serverStorage;
+  newSocket = accept(welcomeSocket, (struct sockaddr *) &serverStorage, &addr_size);
 
-    // Accept incoming connections
-    addr_size = sizeof clientAddr;
-    newSocket = accept(welcomeSocket, (struct sockaddr *)&clientAddr, &addr_size);
-    if (newSocket < 0) {
-        perror("Error accepting connection");
-        exit(EXIT_FAILURE);
-    }
+  // communication starts from here
 
-    // Communication with client
-    do {
-        // Receive client's choice
-        recv(newSocket, &choice, sizeof(choice), 0);
+  // receive an integer from the client
+  recv(newSocket, &num, sizeof(num), 0);
+  printf("Integer received: %d\n",ntohl(num));   
 
-        // Handle different choices
-        switch (choice) {
-            case 1: {
-                // Implement adding student information to the database
-                break;
-            }
-            case 2: {
-                // Implement sending student's information based on ID
-                break;
-            }
-            case 3: {
-                // Implement sending student's information based on score
-                break;
-            }
-            case 4: {
-                // Implement sending all students' information
-                break;
-            }
-            case 5: {
-                // Implement deleting student's information based on ID
-                break;
-            }
-            case 6: {
-                printf("Client requested to exit.\n");
-                break;
-            }
-            default:
-                printf("Invalid choice received.\n");
-        }
-    } while (choice != 6);
+  // send a reply message to the client
+  strcpy(msg, "Integer received");
+  send(newSocket, msg, sizeof(msg), 0);
 
-    // Close sockets
-    close(newSocket);
-    close(welcomeSocket);
+  close(newSocket);
+  close(welcomeSocket);
 
-    return 0;
+  return 0;
 }
